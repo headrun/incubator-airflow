@@ -33,6 +33,34 @@ requires_authentication = airflow.api.api_auth.requires_authentication
 
 api_experimental = Blueprint('api_experimental', __name__)
 
+import airflow
+from airflow import models, settings
+from airflow.contrib.auth.backends.password_auth import PasswordUser
+
+@api_experimental.route('/createuser/', methods=['GET'])
+def createuser():
+    username = request.args['user']
+    email = request.args['email']
+    superuser = request.args['superuser']
+
+    if superuser == 'False':
+        superuser = 0
+    else:
+        superuser = 1
+
+    try:
+        user = PasswordUser(models.User())
+        user.username = username
+        user.email = email
+        user.password = username + '123'
+        user.superuser = superuser
+        session = settings.Session()
+        session.add(user)
+        session.commit() 
+
+        return jsonify("User Created")
+    except:
+        return jsonify("Raised Exception")        
 
 @csrf.exempt
 @api_experimental.route('/dags/<string:dag_id>/dag_runs', methods=['POST'])

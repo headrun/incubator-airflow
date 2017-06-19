@@ -1885,7 +1885,11 @@ class HomeView(AdminIndexView):
         qry = None
 
         # restrict the dags shown if filter_by_owner and current user is not superuser
-        do_filter = FILTER_BY_OWNER and (not current_user.is_superuser())
+        try:
+            do_filter = FILTER_BY_OWNER and (not current_user.user.superuser)
+        except:
+            do_filter = FILTER_BY_OWNER and (not current_user.is_superuser())
+
         owner_mode = conf.get('webserver', 'OWNER_MODE').strip().lower()
 
         hide_paused_dags_by_default = conf.getboolean('webserver',

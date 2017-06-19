@@ -310,7 +310,15 @@ class DagBag(BaseDagBag, LoggingMixin):
                         self.file_last_changed[filepath] = file_last_changed_on_disk
 
         for m in mods:
-            for dag in list(m.__dict__.values()):
+            for dag in list(m.__dict__.get('get_dynim_dag_list')() or []):
+                if isinstance(dag, DAG):
+                    if not dag.full_filepath:
+                        dag.full_filepath = filepath
+                    dag.is_subdag = False
+                    self.bag_dag(dag, parent_dag=dag, root_dag=dag)
+                    found_dags.append(dag)
+                    found_dags += dag.subdags
+		
                 if isinstance(dag, DAG):
                     if not dag.full_filepath:
                         dag.full_filepath = filepath
@@ -489,7 +497,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(ID_LEN), unique=True)
     email = Column(String(500))
-    superuser = False
+    superuser = Column(Boolean(50))
 
     def __repr__(self):
         return self.username

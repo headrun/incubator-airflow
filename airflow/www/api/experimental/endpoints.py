@@ -37,6 +37,8 @@ import airflow
 from airflow import models, settings
 from airflow.contrib.auth.backends.password_auth import PasswordUser
 
+import json
+
 @api_experimental.route('/createuser/', methods=['GET'])
 def createuser():
     username = request.args['user']
@@ -61,6 +63,18 @@ def createuser():
         return jsonify("User Created")
     except:
         return jsonify("Raised Exception")        
+
+@csrf.exempt
+@api_experimental.route('/updatetasks/', methods=['POST'])
+def updatetasks():
+    try:
+        data = json.loads(request.data)
+        with open('/root/airflow/dags/clients.json', 'r+') as outfile:
+            json.dump(data, outfile)
+
+        return jsonify("Updated task successfully!")
+    except:
+        return jsonify('Raised Exception')
 
 @csrf.exempt
 @api_experimental.route('/dags/<string:dag_id>/dag_runs', methods=['POST'])

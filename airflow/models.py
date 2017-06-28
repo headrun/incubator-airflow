@@ -81,6 +81,7 @@ from airflow.utils.state import State
 from airflow.utils.timeout import timeout
 from airflow.utils.trigger_rule import TriggerRule
 
+
 Base = declarative_base()
 ID_LEN = 250
 XCOM_RETURN_KEY = 'return_value'
@@ -4037,6 +4038,27 @@ class DagRun(Base):
                 # something really weird goes on here: if you try to close the session
                 # dag runs will end up detached
                 session = settings.Session()
+                if state != State.RUNNING:
+
+                    last_exe_date = self.dag.latest_execution_date
+                    duration = (datetime.now() - last_exe_date).total_seconds()
+                    print ("get_task %s" % dir(self.dag.get_task))
+                    print ("get_task_instances %s" % dir(self.dag.get_task_instances))
+                    print ("Dag %s" % dir(self.dag))
+                    print ("Session %s" % dir(session))
+
+                    sub = 'Run Status of %s' % self.dag
+                    body = 'Hi, <br>'
+                    body += 'Here is the status of %s <br><br>' % self.dag
+                    body += 'Stats are as follows... <br><br>'
+                    body += 'State : %s <br>' % state
+                    body += 'No. of Tasks : %s <br>' % self.dag.task_count
+                    body += 'Start date : %s <br>' % last_exe_date
+                    body += 'Duration : %s secs<br>' % duration
+
+                    recipients = self.dag.default_args['email']
+
+                    send_email(recipients, sub, body)
                 DagStat.set_dirty(self.dag_id, session=session)
 
     @declared_attr

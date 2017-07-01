@@ -39,42 +39,80 @@ from airflow.contrib.auth.backends.password_auth import PasswordUser
 
 import json
 
-@api_experimental.route('/createuser/', methods=['GET'])
+@csrf.exempt
+@api_experimental.route('/createuser/', methods=['POST'])
 def createuser():
-    username = request.args['user']
-    email = request.args['email']
-    superuser = request.args['superuser']
+    userdata = json.loads(request.data)
+    username = userdata.get('user', '')
+    email = userdata.get('email', '')
+    password = userdata.get('password', username + '123')
+    superuser = userdata.get('superuser', 'False')
 
-    if superuser == 'False':
+    if not superuser:
         superuser = 0
     else:
         superuser = 1
 
+    data = {}
     try:
+        if not username:
+            data['status'] = '200'
+            data['message'] = "Username has missed, unable to create user in Airflow server"
+            return jsonify(data)
+
         user = PasswordUser(models.User())
         user.username = username
         user.email = email
-        user.password = username + '123'
+        user.password = password
         user.superuser = superuser
         session = settings.Session()
         session.add(user)
         session.commit() 
 
-        return jsonify("User Created")
+        data['status'] = '200'
+        data['message'] = "User Created"
     except:
-        return jsonify("Raised Exception")        
+        data['status'] = '400'
+        data['message'] = "Raised Exception"
+
+    return jsonify(data)
+
+@csrf.exempt
+@api_experimental.route('/deleteuser/', methods = ['POST'])
+def deleteuser():
+    data = {}
+    try:
+        session = settings.Session()
+        data = json.loads(request.data)
+        username = data['username']
+        user = session.query(models.User).filter(models.User.username == username)
+        user.delete()
+        session.commit()
+
+        data['message'] = 'User has deleted succesfully!'
+        data['status'] = '200'
+    except:
+        data['status'] = '400'
+        data['message'] = "Raised Exception, hence user hasn't deleted."
+
+    return jsonify(data)
 
 @csrf.exempt
 @api_experimental.route('/updatetasks/', methods=['POST'])
 def updatetasks():
+    data = {}
     try:
         data = json.loads(request.data)
         with open('/root/airflow/dags/clients.json', 'r+') as outfile:
             json.dump(data, outfile)
 
-        return jsonify("Updated task successfully!")
+        data['status'] = '200'
+        data['message'] = "Updated task successfully!"
     except:
-        return jsonify('Raised Exception')
+        data['status'] = '400'
+        data['message'] = "Raised Exception, tasks hasn't updated"
+
+    return jsonify(data)
 
 @csrf.exempt
 @api_experimental.route('/dags/<string:dag_id>/dag_runs', methods=['POST'])

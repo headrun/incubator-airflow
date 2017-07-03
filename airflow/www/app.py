@@ -129,6 +129,7 @@ def create_app(config=None, testing=False):
         integrate_plugins()
 
         import airflow.www.api.experimental.endpoints as e
+        import airflow.www.api.custom.pw_auth as pw_auth
         # required for testing purposes otherwise the module retains
         # a link to the default_auth
         if app.config['TESTING']:
@@ -139,6 +140,7 @@ def create_app(config=None, testing=False):
                 importlib.reload(e)
 
         app.register_blueprint(e.api_experimental, url_prefix='/api/experimental')
+        app.register_blueprint(pw_auth.api_custom_pw_auth, url_prefix='/api/cauth')
 
         @app.context_processor
         def jinja_globals():

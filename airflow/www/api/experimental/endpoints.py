@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
+import traceback
 
 import airflow.api
 
@@ -43,11 +44,10 @@ import json
 @api_experimental.route('/createuser/', methods=['POST'])
 def createuser():
     userdata = json.loads(request.data)
-    username = userdata.get('user', '')
-    email = userdata.get('email', '')
-    password = userdata.get('password', username + '123')
-    superuser = userdata.get('superuser', 'False')
-
+    username = userdata.get('user') or ''
+    email = userdata.get('email') or ''
+    password = userdata.get('password') or username + '123'
+    superuser = userdata.get('superuser') or False
     if not superuser:
         superuser = 0
     else:
@@ -60,20 +60,29 @@ def createuser():
             data['message'] = "Username has missed, unable to create user in Airflow server"
             return jsonify(data)
 
-        user = PasswordUser(models.User())
-        user.username = username
-        user.email = email
-        user.password = password
-        user.superuser = superuser
         session = settings.Session()
-        session.add(user)
-        session.commit() 
+        user = session.query(models.User).filter(models.User.username == username).first()
+        if user:
+            user.superuser = superuser
+            session.commit()
 
-        data['status'] = '200'
-        data['message'] = "User Created"
-    except:
+            data['status'] = '200'
+            data['message'] = 'SuperUser status is updated successfully!'
+        else:
+            user = PasswordUser(models.User())
+            user.username = username
+            user.email = email
+            user.password = password
+            user.superuser = superuser
+            session.add(user)
+            session.commit()
+
+            data['status'] = '200'
+            data['message'] = "User Created successfully!"
+
+    except Exception as e:
         data['status'] = '400'
-        data['message'] = "Raised Exception"
+        data['message'] = e.message
 
     return jsonify(data)
 
@@ -89,11 +98,11 @@ def deleteuser():
         user.delete()
         session.commit()
 
-        data['message'] = 'User has deleted succesfully!'
+        data['message'] = 'User has deleted successfully!'
         data['status'] = '200'
-    except:
+    except Exception as e:
         data['status'] = '400'
-        data['message'] = "Raised Exception, hence user hasn't deleted."
+        data['message'] = e.message
 
     return jsonify(data)
 
@@ -108,9 +117,9 @@ def updatetasks():
 
         data['status'] = '200'
         data['message'] = "Updated task successfully!"
-    except:
+    except Exception as e:
         data['status'] = '400'
-        data['message'] = "Raised Exception, tasks hasn't updated"
+        data['message'] = e.message
 
     return jsonify(data)
 

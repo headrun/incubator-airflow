@@ -111,9 +111,9 @@ def deleteuser():
 def updatetasks():
     data = {}
     try:
-        data = json.loads(request.data)
-        with open('/root/airflow/dags/clients.json', 'r+') as outfile:
-            json.dump(data, outfile)
+        tasks_data = json.loads(request.data)
+        with open('/root/airflow/dags/clients.json', 'w') as outfile:
+            json.dump(tasks_data, outfile)
 
         data['status'] = '200'
         data['message'] = "Updated task successfully!"

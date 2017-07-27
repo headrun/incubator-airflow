@@ -320,7 +320,7 @@ class DagBag(BaseDagBag, LoggingMixin):
                     found_dags.append(dag)
                     found_dags += dag.subdags
 
-	        for dag in list(m.__dict__.values()):
+            for dag in list(m.__dict__.values()):
                 if isinstance(dag, DAG):
                     if not dag.full_filepath:
                         dag.full_filepath = filepath

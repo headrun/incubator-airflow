@@ -2402,7 +2402,7 @@ class DagRunModelView(ModelViewOnly):
         dag_id=dict(validators=[validators.DataRequired()])
     )
     column_list = (
-        'state', 'dag_id', 'execution_date', 'run_id')
+        'state', 'dag_id', 'execution_date', 'run_id', 'external_trigger')
     column_filters = column_list
     column_searchable_list = ('dag_id', 'state', 'run_id')
     column_formatters = dict(

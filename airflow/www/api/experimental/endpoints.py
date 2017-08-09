@@ -112,7 +112,7 @@ def updatetasks():
     data = {}
     try:
         tasks_data = json.loads(request.data)
-        with open('/root/airflow/dags/clients.json', 'w') as outfile:
+        with open('./dags/clients.json', 'w') as outfile:
             json.dump(tasks_data, outfile)
 
         data['status'] = '200'

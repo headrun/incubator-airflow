@@ -47,6 +47,7 @@ import traceback
 import warnings
 import hashlib
 from urllib.parse import urlparse
+from urllib.request import urlopen
 
 from sqlalchemy import (
     Column, Integer, String, DateTime, Text, Boolean, ForeignKey, PickleType,
@@ -81,6 +82,10 @@ from airflow.utils.state import State
 from airflow.utils.timeout import timeout
 from airflow.utils.trigger_rule import TriggerRule
 
+from ConfigParser import SafeConfigParser
+
+_cfg = SafeConfigParser()
+_cfg.read('./airflow.cfg')
 
 Base = declarative_base()
 ID_LEN = 250
@@ -4033,6 +4038,7 @@ class DagRun(Base):
         return self._state
 
     def set_state(self, state):
+        cli_runid = self.run_id
         if self._state != state:
             self._state = state
             if self.dag_id is not None:
@@ -4043,10 +4049,6 @@ class DagRun(Base):
 
                     last_exe_date = self.dag.latest_execution_date
                     duration = (datetime.now() - last_exe_date).total_seconds()
-                    print ("get_task %s" % dir(self.dag.get_task))
-                    print ("get_task_instances %s" % dir(self.dag.get_task_instances))
-                    print ("Dag %s" % dir(self.dag))
-                    print ("Session %s" % dir(session))
 
                     sub = 'Run Status of %s' % self.dag
                     body = 'Hi, <br>'
@@ -4058,8 +4060,21 @@ class DagRun(Base):
                     body += 'Duration : %s secs<br>' % duration
 
                     recipients = self.dag.default_args['email']
+                    client_id = self.dag.default_args['clientid']
 
                     send_email(recipients, sub, body)
+
+                    int_host = _cfg.get('integration_server', 'host')
+                    int_port = _cfg.get('integration_server', 'port')
+
+                    alert_type = 'run_complete'
+                    startdate = self.dag.start_date
+                    url = 'http://%s:%s/alerts/send_alerts/?alert_type=%s&runid=%s&clientid=%s&start_date=%s'\
+                        % (int_host, int_port, alert_type, cli_runid, client_id, startdate)
+                    try:
+                        urlopen(url).read()
+                    except Exception as e:
+                        print ("Send Alerts exception %s" % e)
                 DagStat.set_dirty(self.dag_id, session=session)
 
     @declared_attr

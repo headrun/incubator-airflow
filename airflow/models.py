@@ -4063,18 +4063,6 @@ class DagRun(Base):
                     client_id = self.dag.default_args['clientid']
 
                     send_email(recipients, sub, body)
-
-                    int_host = _cfg.get('integration_server', 'host')
-                    int_port = _cfg.get('integration_server', 'port')
-
-                    alert_type = 'run_complete'
-                    startdate = self.dag.start_date
-                    url = 'http://%s:%s/alerts/send_alerts/?alert_type=%s&runid=%s&clientid=%s&start_date=%s'\
-                        % (int_host, int_port, alert_type, cli_runid, client_id, startdate)
-                    try:
-                        urlopen(url).read()
-                    except Exception as e:
-                        print ("Send Alerts exception %s" % e)
                 DagStat.set_dirty(self.dag_id, session=session)
 
     @declared_attr

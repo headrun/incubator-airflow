@@ -47,6 +47,7 @@ import traceback
 import warnings
 import hashlib
 from urllib.parse import urlparse
+from urllib.request import urlopen
 
 from sqlalchemy import (
     Column, Integer, String, DateTime, Text, Boolean, ForeignKey, PickleType,
@@ -80,6 +81,11 @@ from airflow.utils.operator_resources import Resources
 from airflow.utils.state import State
 from airflow.utils.timeout import timeout
 from airflow.utils.trigger_rule import TriggerRule
+
+from ConfigParser import SafeConfigParser
+
+_cfg = SafeConfigParser()
+_cfg.read('./airflow.cfg')
 
 Base = declarative_base()
 ID_LEN = 250
@@ -310,6 +316,15 @@ class DagBag(BaseDagBag, LoggingMixin):
                         self.file_last_changed[filepath] = file_last_changed_on_disk
 
         for m in mods:
+            for dag in list(m.__dict__.get('get_dynim_dag_list')() or []):
+                if isinstance(dag, DAG):
+                    if not dag.full_filepath:
+                        dag.full_filepath = filepath
+                    dag.is_subdag = False
+                    self.bag_dag(dag, parent_dag=dag, root_dag=dag)
+                    found_dags.append(dag)
+                    found_dags += dag.subdags
+
             for dag in list(m.__dict__.values()):
                 if isinstance(dag, DAG):
                     if not dag.full_filepath:
@@ -489,7 +504,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(ID_LEN), unique=True)
     email = Column(String(500))
-    superuser = False
+    superuser = Column(Boolean(50))
 
     def __repr__(self):
         return self.username
@@ -4023,12 +4038,31 @@ class DagRun(Base):
         return self._state
 
     def set_state(self, state):
+        cli_runid = self.run_id
         if self._state != state:
             self._state = state
             if self.dag_id is not None:
                 # something really weird goes on here: if you try to close the session
                 # dag runs will end up detached
                 session = settings.Session()
+                if state != State.RUNNING:
+
+                    last_exe_date = self.dag.latest_execution_date
+                    duration = (datetime.now() - last_exe_date).total_seconds()
+
+                    sub = 'Run Status of %s' % self.dag
+                    body = 'Hi, <br>'
+                    body += 'Here is the status of %s <br><br>' % self.dag
+                    body += 'Stats are as follows... <br><br>'
+                    body += 'State : %s <br>' % state
+                    body += 'No. of Tasks : %s <br>' % self.dag.task_count
+                    body += 'Start date : %s <br>' % last_exe_date
+                    body += 'Duration : %s secs<br>' % duration
+
+                    recipients = self.dag.default_args['email']
+                    client_id = self.dag.default_args['clientid']
+
+                    send_email(recipients, sub, body)
                 DagStat.set_dirty(self.dag_id, session=session)
 
     @declared_attr

@@ -1885,7 +1885,11 @@ class HomeView(AdminIndexView):
         qry = None
 
         # restrict the dags shown if filter_by_owner and current user is not superuser
-        do_filter = FILTER_BY_OWNER and (not current_user.is_superuser())
+        try:
+            do_filter = FILTER_BY_OWNER and (not current_user.user.superuser)
+        except:
+            do_filter = FILTER_BY_OWNER and (not current_user.is_superuser())
+
         owner_mode = conf.get('webserver', 'OWNER_MODE').strip().lower()
 
         hide_paused_dags_by_default = conf.getboolean('webserver',
@@ -2398,7 +2402,7 @@ class DagRunModelView(ModelViewOnly):
         dag_id=dict(validators=[validators.DataRequired()])
     )
     column_list = (
-        'state', 'dag_id', 'execution_date', 'run_id', 'external_trigger')
+        'state', 'dag_id', 'execution_date', 'run_id')
     column_filters = column_list
     column_searchable_list = ('dag_id', 'state', 'run_id')
     column_formatters = dict(

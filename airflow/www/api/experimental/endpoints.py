@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
+import traceback
 
 import airflow.api
 
@@ -33,6 +34,94 @@ requires_authentication = airflow.api.api_auth.requires_authentication
 
 api_experimental = Blueprint('api_experimental', __name__)
 
+import airflow
+from airflow import models, settings
+from airflow.contrib.auth.backends.password_auth import PasswordUser
+
+import json
+
+@csrf.exempt
+@api_experimental.route('/createuser/', methods=['POST'])
+def createuser():
+    userdata = json.loads(request.data)
+    username = userdata.get('user') or ''
+    email = userdata.get('email') or ''
+    password = userdata.get('password') or username + '123'
+    superuser = userdata.get('superuser') or False
+    if not superuser:
+        superuser = 0
+    else:
+        superuser = 1
+
+    data = {}
+    try:
+        if not username:
+            data['status'] = '200'
+            data['message'] = "Username has missed, unable to create user in Airflow server"
+            return jsonify(data)
+
+        session = settings.Session()
+        user = session.query(models.User).filter(models.User.username == username).first()
+        if user:
+            user.superuser = superuser
+            session.commit()
+
+            data['status'] = '200'
+            data['message'] = 'SuperUser status is updated successfully!'
+        else:
+            user = PasswordUser(models.User())
+            user.username = username
+            user.email = email
+            user.password = password
+            user.superuser = superuser
+            session.add(user)
+            session.commit()
+
+            data['status'] = '200'
+            data['message'] = "User Created successfully!"
+
+    except Exception as e:
+        data['status'] = '400'
+        data['message'] = e.message
+
+    return jsonify(data)
+
+@csrf.exempt
+@api_experimental.route('/deleteuser/', methods = ['POST'])
+def deleteuser():
+    data = {}
+    try:
+        session = settings.Session()
+        data = json.loads(request.data)
+        username = data['username']
+        user = session.query(models.User).filter(models.User.username == username)
+        user.delete()
+        session.commit()
+
+        data['message'] = 'User has deleted successfully!'
+        data['status'] = '200'
+    except Exception as e:
+        data['status'] = '400'
+        data['message'] = e.message
+
+    return jsonify(data)
+
+@csrf.exempt
+@api_experimental.route('/updatetasks/', methods=['POST'])
+def updatetasks():
+    data = {}
+    try:
+        tasks_data = json.loads(request.data)
+        with open('./dags/clients.json', 'w') as outfile:
+            json.dump(tasks_data, outfile)
+
+        data['status'] = '200'
+        data['message'] = "Updated task successfully!"
+    except Exception as e:
+        data['status'] = '400'
+        data['message'] = e.message
+
+    return jsonify(data)
 
 @csrf.exempt
 @api_experimental.route('/dags/<string:dag_id>/dag_runs', methods=['POST'])

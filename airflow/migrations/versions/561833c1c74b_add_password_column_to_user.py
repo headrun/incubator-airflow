@@ -32,7 +32,8 @@ import sqlalchemy as sa
 
 def upgrade():
     op.add_column('user', sa.Column('password', sa.String(255)))
+    op.add_column('user', sa.Column('superuser', sa.Boolean(255)))
 
 
 def downgrade():
-    op.drop_column('user', 'password')
+    op.drop_column('user', 'password', 'superuser')

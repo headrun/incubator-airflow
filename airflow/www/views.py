@@ -2154,7 +2154,7 @@ class JobModelView(AirflowModelView):
         'state': wwwutils.state_f,
         'latest_heartbeat': wwwutils.datetime_f('latest_heartbeat'),
     }
-<<<<<<< HEAD
+
     form_args = dict(
         dag_id=dict(validators=[validators.DataRequired()])
     )
@@ -2183,8 +2183,7 @@ class JobModelView(AirflowModelView):
             dirty_ids.append(row.dag_id)
         models.DagStat.update(dirty_ids, dirty_only=False, session=session)
         session.close()
-=======
->>>>>>> upstream/master
+
 
 
 class DagRunModelView(AirflowModelView):

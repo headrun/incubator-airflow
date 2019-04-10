@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
 
 import json
 import mock
@@ -32,20 +37,20 @@ class ApiKerberosTests(unittest.TestCase):
         configuration.load_test_config()
         try:
             configuration.conf.add_section("api")
-        except:
+        except Exception:
             pass
         configuration.conf.set("api",
                                "auth_backend",
                                "airflow.api.auth.backend.kerberos_auth")
         try:
             configuration.conf.add_section("kerberos")
-        except:
+        except Exception:
             pass
         configuration.conf.set("kerberos",
                                "keytab",
                                os.environ['KRB5_KTNAME'])
 
-        self.app = application.create_app(testing=True)
+        self.app, _ = application.create_app(testing=True)
 
     def test_trigger_dag(self):
         with self.app.test_client() as c:
@@ -59,7 +64,7 @@ class ApiKerberosTests(unittest.TestCase):
 
             response.url = 'http://{}'.format(socket.getfqdn())
 
-            class Request():
+            class Request(object):
                 headers = {}
 
             response.request = Request()

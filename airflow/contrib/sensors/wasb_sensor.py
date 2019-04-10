@@ -1,29 +1,31 @@
 # -*- coding: utf-8 -*-
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
 #
-
-import logging
-
 from airflow.contrib.hooks.wasb_hook import WasbHook
-from airflow.operators.sensors import BaseSensorOperator
+from airflow.sensors.base_sensor_operator import BaseSensorOperator
 from airflow.utils.decorators import apply_defaults
 
 
 class WasbBlobSensor(BaseSensorOperator):
     """
     Waits for a blob to arrive on Azure Blob Storage.
-    
+
     :param container_name: Name of the container.
     :type container_name: str
     :param blob_name: Name of the blob.
@@ -50,9 +52,8 @@ class WasbBlobSensor(BaseSensorOperator):
         self.check_options = check_options
 
     def poke(self, context):
-        logging.info(
-            'Poking for blob: {self.blob_name}\n'
-            'in wasb://{self.container_name}'.format(**locals())
+        self.log.info(
+            'Poking for blob: %s\nin wasb://%s', self.blob_name, self.container_name
         )
         hook = WasbHook(wasb_conn_id=self.wasb_conn_id)
         return hook.check_for_blob(self.container_name, self.blob_name,
@@ -62,7 +63,7 @@ class WasbBlobSensor(BaseSensorOperator):
 class WasbPrefixSensor(BaseSensorOperator):
     """
     Waits for blobs matching a prefix to arrive on Azure Blob Storage.
-    
+
     :param container_name: Name of the container.
     :type container_name: str
     :param prefix: Prefix of the blob.
@@ -88,10 +89,7 @@ class WasbPrefixSensor(BaseSensorOperator):
         self.check_options = check_options
 
     def poke(self, context):
-        logging.info(
-            'Poking for prefix: {self.prefix}\n'
-            'in wasb://{self.container_name}'.format(**locals())
-        )
+        self.log.info('Poking for prefix: %s in wasb://%s', self.prefix, self.container_name)
         hook = WasbHook(wasb_conn_id=self.wasb_conn_id)
         return hook.check_for_prefix(self.container_name, self.prefix,
                                      **self.check_options)

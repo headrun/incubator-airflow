@@ -1432,10 +1432,12 @@ class SchedulerJob(BaseJob):
                 # If a task instance is scheduled or queued, but the corresponding
                 # DAG run isn't running, set the state to NONE so we don't try to
                 # re-run it.
-                self._change_state_for_tis_without_dagrun(simple_dag_bag,
-                                                          [State.QUEUED,
-                                                           State.SCHEDULED],
-                                                          State.NONE)
+                for dag_item in simple_dag_bag.simple_dags:
+
+                    self._change_state_for_tis_without_dagrun(SimpleDagBag([dag_item]),
+                                                              [State.QUEUED,
+                                                               State.SCHEDULED],
+                                                              State.NONE)
 
                 self._execute_task_instances(simple_dag_bag,
                                              (State.SCHEDULED,))
